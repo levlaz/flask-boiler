@@ -1,0 +1,33 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6-node-browsers
+        environment:
+          FLASK_CONFIG: testing
+    steps:
+      - checkout
+      - run:
+          name: Install pipenv
+          command: sudo pip install pipenv
+      - restore_cache:
+          key: v1-deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+      - run:
+          name: Install Dependencies
+          command: |
+            pipenv install --dev
+      - save_cache:
+          key: v1-deps-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+          paths:
+            - $(pipenv --venv)
+      - run:
+          name: Run Tests
+          command: |
+            pipenv run make test
+      - run:
+          name: Generate Coverage Report
+          when: always
+          command: |
+            pipenv run coverage html
+      - store_artifacts:
+          path: htmlcov/
